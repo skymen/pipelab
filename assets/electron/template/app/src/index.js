@@ -58,7 +58,6 @@ import showInExplorer from './handlers/general/open-in-explorer.js'
 // steam raw
 import steamRaw from './handlers/steam/raw.js'
 import { getAppName } from './utils.js'
-import msgpack from './msgpack.js'
 
 /**
  * Assert switch is exhaustive
@@ -179,17 +178,9 @@ const createAppServer = (mainWindow, serveStatic = true) => {
       ws.on('error', console.error)
 
       ws.on('message', async (data) => {
+        //region Message handlers
         /** @type {import('@pipelab/core').Message} */
-        let buffer;
-        if (Array.isArray(data)) {
-          buffer = Buffer.concat(data);
-        } else if (data instanceof ArrayBuffer) {
-          buffer = Buffer.from(data);
-        } else {
-          buffer = data; // Already a Buffer
-        }
-  
-        const json = msgpack.decode(buffer);
+        const json = JSON.parse(data.toString())
         console.log('received:', json)
 
         try {
@@ -317,7 +308,7 @@ const createAppServer = (mainWindow, serveStatic = true) => {
         } catch (e) {
           console.error('e', e)
           ws.send(
-            msgpack.encode({
+            JSON.stringify({
               url: json.url,
               correlationId: json.correlationId,
               body: {
@@ -407,7 +398,7 @@ const createWindow = async () => {
         state: 'fullscreen'
       }
     }
-    broadcastMessage(msgpack.encode(order))
+    broadcastMessage(JSON.stringify(order))
   })
 
   mainWindow.on('leave-full-screen', () => {
@@ -420,7 +411,7 @@ const createWindow = async () => {
         state: 'normal'
       }
     }
-    broadcastMessage(msgpack.encode(order))
+    broadcastMessage(JSON.stringify(order))
   })
 
   mainWindow.webContents?.setWindowOpenHandler(({ url }) => {
